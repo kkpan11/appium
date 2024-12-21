@@ -15,6 +15,7 @@ import type {
   RouteMatcher,
   StringRecord,
   BidiModuleMap,
+  BiDiResultData,
 } from '@appium/types';
 import AsyncLock from 'async-lock';
 import _ from 'lodash';
@@ -441,7 +442,7 @@ export class DriverCore<const C extends Constraints, Settings extends StringReco
     };
   }
 
-  async executeBidiCommand(bidiCmd: string, bidiParams: StringRecord): Promise<any> {
+  async executeBidiCommand(bidiCmd: string, bidiParams: StringRecord): Promise<BiDiResultData> {
     const [moduleName, methodName] = bidiCmd.split('.');
 
     // if we don't get a valid format for bidi command name, reject
@@ -493,8 +494,12 @@ export class DriverCore<const C extends Constraints, Settings extends StringReco
       `Executing bidi command '${bidiCmd}' with params ${logParams} by passing to driver ` +
         `method '${command}'`,
     );
-    const res = (await this[command](...args)) ?? null;
-    this.log.debug(`Responding to bidi command '${bidiCmd}' with ${JSON.stringify(res)}`);
-    return res;
+    const response = await this[command](...args);
+    const finalResponse = _.isUndefined(response) ? {} : response;
+    this.log.debug(
+      `Responding to bidi command '${bidiCmd}' with ` +
+      `${_.truncate(JSON.stringify(finalResponse), {length: MAX_LOG_BODY_LENGTH})}`
+    );
+    return finalResponse;
   }
 }
